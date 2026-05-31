@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Search Engine</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glow-bg"></div>
+    <div class="container">
+        <header>
+            <div class="logo">KNOWLEDGE<span>RAG</span></div>
+            <p class="subtitle">Search your enterprise MongoDB collection using Vector Retrieval & LLMs</p>
+        </header>
+
+        <main>
+            <!-- Search Console -->
+            <div class="search-card">
+                <form id="search-form">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        <input type="text" id="query-input" placeholder="Type a policy query (e.g. 'working remotely')..." required autocomplete="off">
+                        <button type="submit" class="btn-search">Search</button>
+                    </div>
+
+                    <!-- Output Format Options -->
+                    <div class="format-options">
+                        <span class="options-label">Output Format:</span>
+                        <label class="radio-label">
+                            <input type="radio" name="format" value="prose" checked>
+                            <span class="custom-radio"></span> Human Prose
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="format" value="table">
+                            <span class="custom-radio"></span> Markdown Table
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="format" value="json">
+                            <span class="custom-radio"></span> Structured JSON
+                        </label>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Loader -->
+            <div id="loader" class="loader-wrapper hidden">
+                <div class="spinner"></div>
+                <p>Retrieving documents & generating response...</p>
+            </div>
+
+            <!-- Results Dashboard -->
+            <div id="results-panel" class="results-wrapper hidden">
+                <div class="results-header">
+                    <h3>Search Result</h3>
+                    <span id="generator-badge" class="badge">Model: Claude</span>
+                </div>
+
+                <div class="result-box">
+                    <div class="result-heading">Answer</div>
+                    <div id="answer-content" class="content-block text-content"></div>
+                </div>
+
+                <div class="meta-section">
+                    <div class="meta-card">
+                        <div class="meta-title">Retrieved Reference</div>
+                        <div id="source-content" class="meta-value"></div>
+                    </div>
+                    <div class="meta-card">
+                        <div class="meta-title">Similarity Score</div>
+                        <div id="score-content" class="meta-value score">0.0000</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
