@@ -1,0 +1,10 @@
+{
+  "PINECONE_API_KEY": "pcsk_2Af51r_6cAqdctCXoThVW15ksRuFHMrAymtF896T8ZDQthVFgGp6wqSwL55KDpEVofJGef",
+  "PINECONE_INDEX_NAME": "omni-rag-pdfs",
+  "PINECONE_HOST": "https://omni-rag-pdfs-ghws021.svc.aped-4627-b74a.pinecone.io",
+  "PINECONE_NAMESPACE": "",
+  "EMBEDDING_MODEL": "nomic-embed-text",
+  "GENERATION_MODEL": "gemma4:e4b",
+  "VECTOR_DIMENSION": 768,
+  "SIMILARITY_METRIC": "COSINE"
+}
