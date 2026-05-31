@@ -463,6 +463,56 @@ Omni-RAG/
 
 ---
 
+## Decision Tree (Vector DB)
+
+```mermaid
+graph TD
+    %% Custom Styling
+    classDef start fill:#1e293b,stroke:#0f172a,stroke-width:2px,color:#fff;
+    classDef question fill:#38bdf8,stroke:#0284c7,stroke-width:2px,color:#000;
+    classDef leaf fill:#4ade80,stroke:#16a34a,stroke-width:2px,color:#000;
+    
+    %% Tree Nodes
+    Start([Start: Choosing a Vector Database]) --> Q1{Where does your primary <br>application data live?}
+    
+    %% Branch 1: Already on an existing transactional DB
+    Q1 -- Already on Postgres/Mongo/ES --> Q2{Do you want to avoid <br>introducing new infrastructure?}
+    Q2 -- Yes: Keep it unified --> Q3{Which DB are <br>you running?}
+    
+    Q3 -- MongoDB --> L_Mongo[MongoDB Atlas Vector Search]
+    Q3 -- PostgreSQL --> Q4{What is your vector <br>dataset scale?}
+    Q4 -- Under 50M Vectors --> L_PG[pgvector]
+    Q4 -- 50M to 100M+ Vectors --> L_PGS[pgvectorscale]
+    Q3 -- Elasticsearch / OpenSearch --> L_ES[Elasticsearch / OpenSearch]
+
+    %% Branch 2: Ready for Dedicated/New Native Infra
+    Q2 -- No: I want a dedicated engine --> Q5
+    Q1 -- Green field project / Dedicated engine --> Q5{What is your primary <br>deployment environment?}
+    
+    %% Sub-Branch: In-Memory / Embedded
+    Q5 -- Local / Embedded / In-Process --> Q6{What are your resource <br>& data constraints?}
+    Q6 -- Fast Python prototyping --> L_Chroma[ChromaDB]
+    Q6 -- Disk-bound serverless storage / S3 --> L_Lance[LanceDB]
+    
+    %% Sub-Branch: Cloud / Serverless
+    Q5 -- Fully Managed Cloud API --> L_Pinecone[Pinecone]
+    
+    %% Sub-Branch: Self-Hosted Production Server
+    Q5 -- Dedicated Self-Hosted Server --> Q7{What is your primary <br>architectural scale and focus?}
+    Q7 -- Go/Rust backend + Low Latency + Complex Filtering --> L_Qdrant[Qdrant]
+    Q7 -- Multi-Billion Vectors + Distributed Kubernetes --> L_Milvus[Milvus]
+    Q7 -- Go/Node + Auto-Embedding + GraphQL/Knowledge-Graph --> L_Weaviate[Weaviate]
+    Q7 -- High-speed memory caching / Session state --> L_Redis[RedisVL]
+    Q7 -- Advanced Multi-Modal / Complex Tensor math --> Q8{What kind of multi-modal data?}
+    Q8 -- Native end-to-end media pipeline --> L_Marqo[Marqo]
+    Q8 -- Enterprise web recommendation engine / C++ --> L_Vespa[Vespa.ai]
+
+    %% Class Assignments
+    class Start start;
+    class Q1,Q2,Q3,Q4,Q5,Q6,Q7,Q8 question;
+    class L_Mongo,L_PG,L_PGS,L_ES,L_Chroma,L_Lance,L_Pinecone,L_Qdrant,L_Milvus,L_Weaviate,L_Redis,L_Marqo,L_Vespa leaf;
+```
+
 ## 🗺️ Engineering Roadmap
 
 OmniRAG is actively evolving from a single-node retrieval pipeline into a highly distributed, multi-agent framework.
