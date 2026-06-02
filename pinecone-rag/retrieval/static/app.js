@@ -52,7 +52,7 @@ function activateStage(stage, message) {
   dot.classList.add('hidden');
   icon.classList.remove('hidden');
   step.classList.remove('text-slate-400');
-  step.classList.add('border-accent/50', 'text-white');
+  step.classList.add('border-emerald-500/40', 'text-white');
 
   if (message) stageMsg.textContent = message;
 }
@@ -64,7 +64,7 @@ function completeStage(stage) {
 
   icon.classList.add('hidden');
   check.classList.remove('hidden');
-  step.classList.remove('border-accent/50', 'text-white');
+  step.classList.remove('border-emerald-500/40', 'text-white');
   step.classList.add('border-emerald-500/40', 'text-emerald-300');
 }
 
@@ -102,13 +102,13 @@ function hideError() {
 // ─── Chat card creation ───────────────────────────────────────────────────────
 function createAnswerCard(query) {
   const card = document.createElement('div');
-  card.className = 'chat-entry glass rounded-2xl overflow-hidden shadow-xl shadow-black/20';
+  card.className = 'chat-entry rounded-2xl border border-slate-800 bg-slate-900/50 p-5 shadow-glow';
 
   card.innerHTML = `
     <!-- Query bubble -->
-    <div class="px-5 pt-5 pb-3 border-b border-border/60">
+    <div class="pb-4 border-b border-slate-800">
       <div class="flex items-start gap-3">
-        <div class="w-7 h-7 rounded-full bg-surface-3 border border-border flex items-center justify-center flex-shrink-0 mt-0.5">
+        <div class="w-7 h-7 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center flex-shrink-0 mt-0.5">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
         </div>
         <p class="text-sm text-white font-medium leading-relaxed query-text"></p>
@@ -116,14 +116,14 @@ function createAnswerCard(query) {
     </div>
 
     <!-- Answer area -->
-    <div class="px-5 py-4">
+    <div class="pt-4">
       <div class="flex items-start gap-3">
         <!-- AI avatar -->
-        <div class="w-7 h-7 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round"><path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+        <div class="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round"><path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-xs font-semibold text-accent mb-2">OmniRAG Answer</p>
+          <p class="text-xs font-semibold text-emerald-400 mb-2">OmniRAG Answer</p>
           <div id="answer-text" class="text-sm text-slate-200 cursor"></div>
         </div>
       </div>
@@ -131,9 +131,9 @@ function createAnswerCard(query) {
       <!-- Citation section (hidden initially) -->
       <div class="citation-section hidden mt-5 ml-10">
         <div class="flex items-center gap-2 mb-3">
-          <div class="h-px flex-1 bg-border"></div>
+          <div class="h-px flex-1 bg-slate-800"></div>
           <span class="text-xs text-slate-500 font-medium px-2">Sources</span>
-          <div class="h-px flex-1 bg-border"></div>
+          <div class="h-px flex-1 bg-slate-800"></div>
         </div>
         <div class="citation-cards grid gap-2"></div>
       </div>
@@ -155,16 +155,16 @@ function createAnswerCard(query) {
 // ─── Source citation card ─────────────────────────────────────────────────────
 function renderCitationCard(src, index) {
   const scorePercent = Math.round(src.score * 100);
-  const scoreColor   = scorePercent >= 80 ? 'text-emerald-400' : scorePercent >= 60 ? 'text-gold' : 'text-slate-400';
+  const scoreColor   = scorePercent >= 80 ? 'text-emerald-400' : scorePercent >= 60 ? 'text-amber-400' : 'text-slate-400';
 
   const card = document.createElement('div');
-  card.className = 'source-card bg-surface-2 rounded-xl p-3.5 border border-border cursor-pointer';
+  card.className = 'source-card rounded-xl border border-slate-800 bg-slate-950/40 p-4 cursor-pointer';
   card.innerHTML = `
     <div class="flex items-start justify-between gap-3 mb-2">
       <div class="flex items-center gap-2 min-w-0">
         <!-- Doc icon -->
-        <div class="w-7 h-7 rounded-lg bg-accent/15 border border-accent/25 flex items-center justify-center flex-shrink-0">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round">
+        <div class="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center flex-shrink-0">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
             <line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
@@ -182,13 +182,13 @@ function renderCitationCard(src, index) {
 
     <!-- Metadata chips -->
     <div class="flex flex-wrap items-center gap-1.5 mb-2.5">
-      <span class="px-2 py-0.5 rounded-md bg-surface-3 border border-border text-xs text-slate-400">
+      <span class="px-2 py-0.5 rounded-md bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
         Ch. ${src.chapter || '—'}
       </span>
-      <span class="px-2 py-0.5 rounded-md bg-surface-3 border border-border text-xs text-slate-400">
+      <span class="px-2 py-0.5 rounded-md bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
         Pg. ${src.page_number || '—'}
       </span>
-      <span class="px-2 py-0.5 rounded-md bg-surface-3 border border-border text-xs text-slate-500 font-mono">
+      <span class="px-2 py-0.5 rounded-md bg-slate-900/60 border border-slate-800 text-xs text-slate-500 font-mono">
         ${src.id ? src.id.split('_chunk_')[1] ? 'chunk #' + src.id.split('_chunk_')[1] : src.id.substring(0, 12) : '—'}
       </span>
     </div>
@@ -197,7 +197,7 @@ function renderCitationCard(src, index) {
     <p class="text-xs text-slate-400 leading-relaxed line-clamp-2 snippet"></p>
 
     <!-- View source link -->
-    <button class="view-source mt-2.5 flex items-center gap-1 text-xs text-accent hover:text-accent-light transition-colors font-medium">
+    <button class="view-source mt-2.5 flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-medium">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       📎 View Source Document
     </button>
@@ -224,8 +224,8 @@ function openSourceModal(src, index) {
 
   modalBody.innerHTML = `
     <div class="flex items-center gap-3 mb-4">
-      <div class="w-10 h-10 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.8" stroke-linecap="round">
+      <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8" stroke-linecap="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
           <line x1="16" y1="17" x2="8" y2="17"/>
@@ -238,25 +238,25 @@ function openSourceModal(src, index) {
     </div>
 
     <div class="space-y-3">
-      <div class="bg-surface-2 rounded-lg p-3 border border-border">
+      <div class="bg-slate-900/60 rounded-lg p-3 border border-slate-800">
         <p class="text-xs text-slate-500 mb-1 font-medium">Document ID</p>
         <p class="text-xs font-mono text-slate-200 break-all">${escHtml(src.source_file_id || '—')}</p>
       </div>
       <div class="grid grid-cols-3 gap-2">
-        <div class="bg-surface-2 rounded-lg p-3 border border-border text-center">
+        <div class="bg-slate-900/60 rounded-lg p-3 border border-slate-800 text-center">
           <p class="text-xs text-slate-500 mb-1">Chapter</p>
           <p class="text-sm font-semibold text-white">${src.chapter || '—'}</p>
         </div>
-        <div class="bg-surface-2 rounded-lg p-3 border border-border text-center">
+        <div class="bg-slate-900/60 rounded-lg p-3 border border-slate-800 text-center">
           <p class="text-xs text-slate-500 mb-1">Page</p>
           <p class="text-sm font-semibold text-white">${src.page_number || '—'}</p>
         </div>
-        <div class="bg-surface-2 rounded-lg p-3 border border-border text-center">
+        <div class="bg-slate-900/60 rounded-lg p-3 border border-slate-800 text-center">
           <p class="text-xs text-slate-500 mb-1">Score</p>
           <p class="text-sm font-semibold text-emerald-400">${scorePercent}%</p>
         </div>
       </div>
-      <div class="bg-surface-2 rounded-lg p-3 border border-border">
+      <div class="bg-slate-900/60 rounded-lg p-3 border border-slate-800">
         <p class="text-xs text-slate-500 mb-2 font-medium">Matched Text Content</p>
         <p class="text-xs text-slate-300 leading-relaxed">${escHtml(src.text_content || 'No content available.')}</p>
       </div>
@@ -385,6 +385,9 @@ async function runSearch() {
     // Complete all stages visually
     STAGES.forEach(completeStage);
     stageMsg.textContent = 'Complete';
+    // Clear input and refocus for next query
+    searchInput.value = '';
+    searchInput.focus();
   }
 }
 
