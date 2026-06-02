@@ -58,6 +58,31 @@
         </div>
       </header>
 
+      <!-- Search Input (Always Visible - Fixed Position) -->
+      <div id="search-container" class="rounded-2xl border border-slate-800 bg-slate-950/40 p-4 mb-6">
+        <label for="search-input" class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 mb-3">Your Question</label>
+        <textarea
+          id="search-input"
+          rows="2"
+          placeholder="How do I fix a leaking pump? What does section 4.2 cover?…"
+          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-500 resize-none transition hover:border-emerald-500"
+          style="min-height:60px"
+        ></textarea>
+        <div class="mt-4 flex justify-end">
+          <button
+            id="search-btn"
+            class="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+          >
+            <span id="btn-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+            </span>
+            <span id="btn-label">Search</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Main Content -->
       <section class="flex flex-1 flex-col gap-6">
         <!-- Hero Section (Instructions) -->
@@ -67,31 +92,6 @@
             Semantic RAG · Top-3 Vector Retrieval · Streamed LLM
           </div>
           <h2 class="mt-4 text-2xl font-semibold text-white">Ask anything about your documents</h2>
-        </div>
-
-        <!-- Search Input (Always Visible & Sticky) -->
-        <div class="sticky top-0 z-10 rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
-          <label for="search-input" class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 mb-3">Your Question</label>
-          <textarea
-            id="search-input"
-            rows="2"
-            placeholder="How do I fix a leaking pump? What does section 4.2 cover?…"
-            class="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-500 resize-none transition hover:border-emerald-500"
-            style="min-height:60px"
-          ></textarea>
-          <div class="mt-4 flex justify-end">
-            <button
-              id="search-btn"
-              class="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
-            >
-              <span id="btn-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                </svg>
-              </span>
-              <span id="btn-label">Search</span>
-            </button>
-          </div>
         </div>
 
         <!-- Pipeline Stage Indicator -->
