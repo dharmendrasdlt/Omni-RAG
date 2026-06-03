@@ -30,9 +30,10 @@ type Config struct {
 	PineconeIndex   string
 	PineconeNS      string
 	TopK            int
+	AnthropicAPIKey string
+	AnthropicModel  string
 }
 
-// Define the exact structural mirror matching your ALL_CAPS JSON keys
 type PineconeJSONConfig struct {
 	PineconeAPIKey    string `json:"PINECONE_API_KEY"`
 	PineconeIndexName string `json:"PINECONE_INDEX_NAME"`
@@ -40,50 +41,43 @@ type PineconeJSONConfig struct {
 	PineconeNamespace string `json:"PINECONE_NAMESPACE"`
 	EmbeddingModel    string `json:"EMBEDDING_MODEL"`
 	GenerationModel   string `json:"GENERATION_MODEL"`
+	AnthropicAPIKey   string `json:"ANTHROPIC_API_KEY"`
+	AnthropicModel    string `json:"ANTHROPIC_MODEL"`
 }
 
-// LoadPineconeJSON attempts to read and parse the all-caps config file.
 func LoadPineconeJSON(path string) PineconeJSONConfig {
 	var config PineconeJSONConfig
-
 	fileBytes, err := os.ReadFile(path)
 	if err != nil {
-		// If file doesn't exist, skip it and rely on environment variables
 		return config
 	}
-
 	if err := json.Unmarshal(fileBytes, &config); err != nil {
 		log.Printf("Warning: Found pinecone-config.json but failed to parse it: %v", err)
 	}
-
 	return config
 }
 
-// loadConfig initializes your retrieval service settings
 func loadConfig() Config {
-	// 1. Load the values from the local JSON file
-	jsonCfg := LoadPineconeJSON("../pinecone-config.json")
-
-	// 2. Return your updated composite configurations
+	jsonCfg := LoadPineconeJSON("../config.json")
 	return Config{
 		Port:          env("PORT", "8081"),
 		OllamaBaseURL: strings.TrimRight(env("OLLAMA_BASE_URL", "http://localhost:11434"), "/"),
 
-		// Falls back to JSON configuration value if environment variable is missing
 		OllamaModel:     envOrJSON(env("EMBEDDING_MODEL", ""), jsonCfg.EmbeddingModel, "gemma4:e2b"),
 		GenerationModel: envOrJSON(env("GENERATION_MODEL", ""), jsonCfg.GenerationModel, "gemma4:e4b"),
 
-		// Prioritizes terminal environment exports first, then file configurations
 		PineconeAPIKey: envOrJSON(os.Getenv("PINECONE_API_KEY"), jsonCfg.PineconeAPIKey, ""),
 		PineconeHost:   strings.TrimRight(envOrJSON(os.Getenv("PINECONE_HOST"), jsonCfg.PineconeHost, ""), "/"),
 		PineconeIndex:  envOrJSON(os.Getenv("PINECONE_INDEX"), jsonCfg.PineconeIndexName, ""),
 		PineconeNS:     envOrJSON(os.Getenv("PINECONE_NAMESPACE"), jsonCfg.PineconeNamespace, ""),
 
 		TopK: envInt("RETRIEVAL_TOP_K", 3),
+
+		AnthropicAPIKey: envOrJSON(os.Getenv("ANTHROPIC_API_KEY"), jsonCfg.AnthropicAPIKey, ""),
+		AnthropicModel:  envOrJSON(env("ANTHROPIC_MODEL", ""), jsonCfg.AnthropicModel, "claude-haiku-4-5-20251001"),
 	}
 }
 
-// Helper utility to cascade string resolution across Env -> JSON File -> Defaults
 func envOrJSON(envVal string, jsonVal string, defaultVal string) string {
 	if envVal != "" {
 		return envVal
@@ -120,7 +114,6 @@ type SearchRequest struct {
 	Query string `json:"query"`
 }
 
-// SourceMatch represents a single retrieved vector chunk and its metadata.
 type SourceMatch struct {
 	ID           string  `json:"id"`
 	Score        float64 `json:"score"`
@@ -163,7 +156,6 @@ type ollamaEmbedResponse struct {
 	Embeddings [][]float32 `json:"embeddings"`
 }
 
-// Embed converts a text query into a float32 vector via Ollama /api/embed.
 func (o *OllamaEmbedder) Embed(ctx context.Context, text string) ([]float32, error) {
 	text = strings.TrimSpace(text)
 	if text == "" {
@@ -215,18 +207,14 @@ func (o *OllamaEmbedder) Embed(ctx context.Context, text string) ([]float32, err
 
 // ─── Step 2 — Pinecone Querier ────────────────────────────────────────────────
 
-// PineconeQuerier resolves the index host (via SDK if needed) and
-// issues raw REST queries for maximum compatibility.
 type PineconeQuerier struct {
 	APIKey    string
-	Host      string // resolved data-plane host
+	Host      string
 	Namespace string
 	TopK      int
 	Client    *http.Client
 }
 
-// NewPineconeQuerier builds the querier and resolves the index host when
-// PINECONE_HOST is not explicitly set, using the official Go SDK.
 func NewPineconeQuerier(ctx context.Context, cfg Config) (*PineconeQuerier, error) {
 	q := &PineconeQuerier{
 		APIKey:    cfg.PineconeAPIKey,
@@ -236,17 +224,14 @@ func NewPineconeQuerier(ctx context.Context, cfg Config) (*PineconeQuerier, erro
 		Client:    &http.Client{Timeout: 30 * time.Second},
 	}
 
-	// If host already provided, skip SDK host discovery.
 	if q.Host != "" {
 		return q, nil
 	}
 
 	if q.APIKey == "" || cfg.PineconeIndex == "" {
-		// Missing creds — callers will receive an error on first Query call.
 		return q, nil
 	}
 
-	// Use official Pinecone SDK only for host discovery (DescribeIndex).
 	pc, err := pinecone.NewClient(pinecone.NewClientParams{
 		ApiKey:    q.APIKey,
 		SourceTag: "omnirag-retrieval",
@@ -281,7 +266,6 @@ type pineconeQueryResponse struct {
 	Matches []pineconeMatch `json:"matches"`
 }
 
-// Query sends the embedding vector to Pinecone and returns the top-K source matches.
 func (p *PineconeQuerier) Query(ctx context.Context, vector []float32) ([]SourceMatch, error) {
 	if p.APIKey == "" {
 		return nil, errors.New("PINECONE_API_KEY is not configured")
@@ -355,34 +339,41 @@ func (p *PineconeQuerier) Query(ctx context.Context, vector []float32) ([]Source
 
 // ─── Steps 3 & 4 — Prompt Builder ────────────────────────────────────────────
 
-// buildPrompt constructs the strict RAG system prompt from retrieved chunks.
-func buildPrompt(query string, sources []SourceMatch) string {
+// buildRAGPrompt returns the system context and the user question separately
+// so each streamer can format them as its API requires.
+func buildRAGPrompt(query string, sources []SourceMatch) (system, user string) {
 	var sb strings.Builder
-
-	sb.WriteString("[System Instruction]: You are a technical assistant. ")
+	sb.WriteString("You are a technical assistant. ")
 	sb.WriteString("Answer the user's question using ONLY the context block provided below. ")
 	sb.WriteString("If the answer cannot be found in the context, state clearly that you do not know. ")
 	sb.WriteString("Do not make up facts.\n\n")
 	sb.WriteString("[Context Content]:\n")
-
 	for i, s := range sources {
 		sb.WriteString(fmt.Sprintf("--- Source %d ---\n", i+1))
 		sb.WriteString(fmt.Sprintf("Document ID: %s | Chapter: %d | Page: %d\n", s.SourceFileID, s.Chapter, s.PageNumber))
 		sb.WriteString(fmt.Sprintf("Content: %q\n", s.TextContent))
 		sb.WriteString("----------------------\n")
 	}
-
-	sb.WriteString(fmt.Sprintf("\n[User Question]: %s\n", query))
-	return sb.String()
+	return sb.String(), query
 }
 
-// ─── Step 5 — Ollama Streamer ─────────────────────────────────────────────────
+// ─── Step 5 — Streamer Interface ─────────────────────────────────────────────
+
+// Streamer generates a streaming LLM response from a system context and user question.
+type Streamer interface {
+	Stream(ctx context.Context, system, user string, onToken func(string) error) error
+	ModelName() string
+}
+
+// ─── Step 5a — Ollama Streamer ────────────────────────────────────────────────
 
 type OllamaStreamer struct {
 	BaseURL string
 	Model   string
 	Client  *http.Client
 }
+
+func (o *OllamaStreamer) ModelName() string { return o.Model }
 
 type ollamaGenerateRequest struct {
 	Model  string `json:"model"`
@@ -395,9 +386,10 @@ type ollamaGenerateChunk struct {
 	Done     bool   `json:"done"`
 }
 
-// Stream sends the RAG prompt to Ollama /api/generate and calls onToken for
-// every streamed token. Returns nil when the model finishes.
-func (o *OllamaStreamer) Stream(ctx context.Context, prompt string, onToken func(string) error) error {
+func (o *OllamaStreamer) Stream(ctx context.Context, system, user string, onToken func(string) error) error {
+	// Reconstruct the single-string prompt Ollama expects.
+	prompt := "[System Instruction]: " + system + "\n[User Question]: " + user + "\n"
+
 	body, err := json.Marshal(ollamaGenerateRequest{
 		Model:  o.Model,
 		Prompt: prompt,
@@ -429,7 +421,6 @@ func (o *OllamaStreamer) Stream(ctx context.Context, prompt string, onToken func
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
-	// Increase scanner buffer for large context responses.
 	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
 
 	for scanner.Scan() {
@@ -454,16 +445,117 @@ func (o *OllamaStreamer) Stream(ctx context.Context, prompt string, onToken func
 	return scanner.Err()
 }
 
+// ─── Step 5b — Anthropic Streamer ────────────────────────────────────────────
+
+type AnthropicStreamer struct {
+	APIKey string
+	Model  string
+	Client *http.Client
+}
+
+func (a *AnthropicStreamer) ModelName() string { return a.Model }
+
+type anthropicRequest struct {
+	Model     string             `json:"model"`
+	MaxTokens int                `json:"max_tokens"`
+	System    string             `json:"system"`
+	Messages  []anthropicMessage `json:"messages"`
+	Stream    bool               `json:"stream"`
+}
+
+type anthropicMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// Stream calls the Anthropic Messages API with streaming and delivers each
+// text_delta token to onToken. Returns nil when the model finishes.
+func (a *AnthropicStreamer) Stream(ctx context.Context, system, user string, onToken func(string) error) error {
+	payload := anthropicRequest{
+		Model:     a.Model,
+		MaxTokens: 1024,
+		System:    system,
+		Messages:  []anthropicMessage{{Role: "user", Content: user}},
+		Stream:    true,
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.anthropic.com/v1/messages", bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-api-key", a.APIKey)
+	req.Header.Set("anthropic-version", "2023-06-01")
+
+	resp, err := a.Client.Do(req)
+	if err != nil {
+		return fmt.Errorf("anthropic request: %w", err)
+	}
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			log.Printf("close anthropic response body: %v", closeErr)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("anthropic status %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+
+	// Anthropic SSE: lines alternate between "event: <type>" and "data: <json>".
+	// We only extract text from content_block_delta events.
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
+
+	var currentEvent string
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if strings.HasPrefix(line, "event: ") {
+			currentEvent = strings.TrimPrefix(line, "event: ")
+			continue
+		}
+
+		if strings.HasPrefix(line, "data: ") && currentEvent == "content_block_delta" {
+			raw := strings.TrimPrefix(line, "data: ")
+			var delta struct {
+				Delta struct {
+					Type string `json:"type"`
+					Text string `json:"text"`
+				} `json:"delta"`
+			}
+			if err := json.Unmarshal([]byte(raw), &delta); err != nil {
+				log.Printf("parse anthropic delta: %v (data: %q)", err, raw)
+				continue
+			}
+			if delta.Delta.Type == "text_delta" && delta.Delta.Text != "" {
+				if err := onToken(delta.Delta.Text); err != nil {
+					return err
+				}
+			}
+		}
+
+		if line == "" {
+			currentEvent = ""
+		}
+	}
+	return scanner.Err()
+}
+
 // ─── App & HTTP Layer ─────────────────────────────────────────────────────────
 
 type App struct {
 	cfg      Config
 	embedder *OllamaEmbedder
 	querier  *PineconeQuerier
-	streamer *OllamaStreamer
+	streamer Streamer
 }
 
-// sseWrite writes a single SSE event and flushes immediately.
 func sseWrite(w http.ResponseWriter, flusher http.Flusher, eventType string, payload any) error {
 	data, err := json.Marshal(payload)
 	if err != nil {
@@ -477,15 +569,12 @@ func sseWrite(w http.ResponseWriter, flusher http.Flusher, eventType string, pay
 	return nil
 }
 
-// handleSearch is the main RAG pipeline endpoint.
-// It returns an SSE stream containing: stage → token(s) → sources → done | error.
 func (a *App) handleSearch(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Parse request body.
 	var req SearchRequest
 	if err := json.NewDecoder(io.LimitReader(r.Body, 64*1024)).Decode(&req); err != nil {
 		writeJSONError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
@@ -503,7 +592,6 @@ func (a *App) handleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Switch to SSE mode.
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -546,19 +634,19 @@ func (a *App) handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("[search] pinecone ok matches=%d", len(sources))
 
-	// ── Steps 3 & 4: Build strict RAG prompt ─────────────────────────────────
-	prompt := buildPrompt(req.Query, sources)
-	log.Printf("[search] prompt built len=%d", len(prompt))
+	// ── Steps 3 & 4: Build RAG prompt ────────────────────────────────────────
+	system, user := buildRAGPrompt(req.Query, sources)
+	log.Printf("[search] prompt built system_len=%d", len(system))
 
 	// ── Step 5: Stream LLM response ──────────────────────────────────────────
-	_ = sseWrite(w, flusher, "stage", stageEvent{Stage: "generating", Message: "Generating answer with Gemma 4…"})
-	log.Printf("[search] step=ollama-stream model=%s", a.cfg.OllamaModel)
+	_ = sseWrite(w, flusher, "stage", stageEvent{Stage: "generating", Message: fmt.Sprintf("Generating answer with %s…", a.streamer.ModelName())})
+	log.Printf("[search] step=stream model=%s", a.streamer.ModelName())
 
 	streamCtx, streamCancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer streamCancel()
 
 	tokenCount := 0
-	err = a.streamer.Stream(streamCtx, prompt, func(token string) error {
+	err = a.streamer.Stream(streamCtx, system, user, func(token string) error {
 		tokenCount++
 		return sseWrite(w, flusher, "token", tokenEvent{Text: token})
 	})
@@ -569,7 +657,6 @@ func (a *App) handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("[search] stream complete tokens=%d", tokenCount)
 
-	// ── Send citations & close ────────────────────────────────────────────────
 	_ = sseWrite(w, flusher, "sources", sourcesEvent{Sources: sources})
 	_ = sseWrite(w, flusher, "done", map[string]bool{"ok": true})
 }
@@ -613,7 +700,6 @@ func main() {
 	cfg := loadConfig()
 	ctx := context.Background()
 
-	// Resolve Pinecone host at startup (uses SDK DescribeIndex when PINECONE_HOST is unset).
 	querier, err := NewPineconeQuerier(ctx, cfg)
 	if err != nil {
 		log.Printf("warning: Pinecone host could not be resolved at startup: %v — continuing; runtime queries will fail", err)
@@ -626,6 +712,24 @@ func main() {
 		}
 	}
 
+	// Pick streamer: Anthropic when key is present, Ollama otherwise.
+	var streamer Streamer
+	if cfg.AnthropicAPIKey != "" {
+		streamer = &AnthropicStreamer{
+			APIKey: cfg.AnthropicAPIKey,
+			Model:  cfg.AnthropicModel,
+			Client: &http.Client{Timeout: 5 * time.Minute},
+		}
+		log.Printf("Generation backend : Anthropic (%s)", cfg.AnthropicModel)
+	} else {
+		streamer = &OllamaStreamer{
+			BaseURL: cfg.OllamaBaseURL,
+			Model:   cfg.GenerationModel,
+			Client:  &http.Client{Timeout: 5 * time.Minute},
+		}
+		log.Printf("Generation backend : Ollama (%s @ %s)", cfg.GenerationModel, cfg.OllamaBaseURL)
+	}
+
 	app := &App{
 		cfg: cfg,
 		embedder: &OllamaEmbedder{
@@ -633,12 +737,8 @@ func main() {
 			Model:   cfg.OllamaModel,
 			Client:  &http.Client{Timeout: 60 * time.Second},
 		},
-		querier: querier,
-		streamer: &OllamaStreamer{
-			BaseURL: cfg.OllamaBaseURL,
-			Model:   cfg.GenerationModel,
-			Client:  &http.Client{Timeout: 5 * time.Minute},
-		},
+		querier:  querier,
+		streamer: streamer,
 	}
 
 	mux := http.NewServeMux()
@@ -654,8 +754,7 @@ func main() {
 	}
 
 	log.Printf("OmniRAG Retrieval Service →  http://localhost:%s", cfg.Port)
-	log.Printf("Embedding model : %s @ %s", cfg.OllamaModel, cfg.OllamaBaseURL)
-	log.Printf("Generation model : %s @ %s", cfg.GenerationModel, cfg.OllamaBaseURL)
-	log.Printf("Pinecone host: %s (top_k=%d)", querier.Host, cfg.TopK)
+	log.Printf("Embedding model  : %s @ %s", cfg.OllamaModel, cfg.OllamaBaseURL)
+	log.Printf("Pinecone host    : %s (top_k=%d)", querier.Host, cfg.TopK)
 	log.Fatal(server.ListenAndServe())
 }
