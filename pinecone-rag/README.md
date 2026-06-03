@@ -1,4 +1,17 @@
-# Pinecone RAG Ingestion Service
+# Pinecone RAG — Ingestion & Retrieval
+
+This module is the Pinecone-backed RAG pipeline for OmniRAG, split into two services:
+
+| Service | Folder | Port | Role |
+|---|---|---|---|
+| **Ingestion** | `ingestion/` | `8080` | Upload PDFs → GridFS → chunk → embed → upsert to Pinecone |
+| **Retrieval** | `retrieval/` | `8081` | Query → embed → Pinecone search → LLM answer (streamed via SSE) |
+
+The **retrieval** service can generate answers with **Anthropic Claude** or fall back to local **Ollama** — see [Retrieval Service](#retrieval-service) below.
+
+---
+
+## Ingestion Service
 
 This service implements a full-stack PDF ingestion pipeline for OmniRAG. It stores raw PDF files in MongoDB GridFS, extracts text page-by-page, chunks text with LangChainGo, generates local Ollama embeddings, upserts vectors into Pinecone, and streams live progress to a Tailwind-powered dashboard through Server-Sent Events.
 
@@ -146,3 +159,109 @@ go test ./...
 - Page numbers are preserved from the PDF extraction loop.
 - Chapter defaults to `1` because chapter detection is not reliably available from plain PDF text extraction.
 - Multipart file streams, GridFS streams, PDF parser files, temporary files, and HTTP response bodies are closed with explicit cleanup paths.
+
+---
+
+## Retrieval Service
+
+The retrieval service (`retrieval/`, port `8081`) answers natural-language questions over the ingested PDFs. It embeds the query, runs a Pinecone similarity search, builds a grounded RAG prompt from the top matches, and streams the generated answer token-by-token over Server-Sent Events.
+
+### Architecture
+
+```text
+POST /api/search { "query": "..." }
+        │
+        ▼
+┌─────────────────────────────────────────────────────────┐
+│ retrieval/  (split into focused files)                    │
+│                                                           │
+│  Step 1  Embed query        → Ollama /api/embed           │
+│          (nomic-embed-text)                               │
+│  Step 2  Vector search      → Pinecone /query (top_k)     │
+│  Step 3  Build RAG prompt    (system + user, grounded)    │
+│  Step 4  Stream generation  → Anthropic Claude OR Ollama  │
+│                                                           │
+│  Each step emits an SSE event to the browser/UI.          │
+└─────────────────────────────────────────────────────────┘
+```
+
+### File Layout
+
+`retrieval/main.go` is split into single-responsibility files:
+
+| File | Responsibility |
+|---|---|
+| `main.go` | Wiring — config load, streamer selection, HTTP server |
+| `config.go` | `Config`, JSON loader, env/JSON cascade helpers |
+| `types.go` | `SearchRequest`, `SourceMatch`, SSE event payloads |
+| `embedder.go` | `OllamaEmbedder` (query embedding) |
+| `pinecone.go` | `PineconeQuerier` (host resolution + vector search) |
+| `prompt.go` | `buildRAGPrompt` (grounded system + user prompt) |
+| `streamer.go` | `Streamer` interface + `OllamaStreamer` + `AnthropicStreamer` |
+| `server.go` | `App`, `/api/search` handler, CORS + recover middleware |
+
+### Generation Backend Selection
+
+The retrieval service uses Anthropic Claude **only** when all three are set in `config.json`:
+
+```jsonc
+"ANTHROPIC_API_KEY": "sk-ant-...",                 // present
+"ANTHROPIC_MODEL":   "claude-haiku-4-5-20251001",  // present
+"ANTHROPIC_CREDIT_BALANCE": true                    // explicitly true
+```
+
+Otherwise it falls back to local Ollama (`GENERATION_MODEL`). Flip `ANTHROPIC_CREDIT_BALANCE` to `false` to force Ollama while keeping the key in config (e.g. when the Anthropic account is out of credits). Both backends implement a common `Streamer` interface so the rest of the pipeline is backend-agnostic.
+
+### Endpoint
+
+#### `POST /api/search`
+
+Request:
+```json
+{ "query": "What is the role of the night's watch?" }
+```
+
+Response: an SSE stream (`Content-Type: text/event-stream`). See [docs/RETRIEVAL_SSE_FORMAT.md](docs/RETRIEVAL_SSE_FORMAT.md) for the full event format, payload examples, and edge cases.
+
+Quick example:
+```bash
+curl -N -X POST http://localhost:8081/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is the role of the night'\''s watch?"}'
+```
+
+### Configuration
+
+Copy the example (`config.json` is gitignored — it holds API keys):
+
+```bash
+cp config.example.json config.json
+```
+
+| Key | Description |
+|---|---|
+| `PINECONE_API_KEY` | Pinecone API key |
+| `PINECONE_INDEX_NAME` | Index name (used for host resolution via SDK) |
+| `PINECONE_HOST` | Index host (optional if name resolves via SDK) |
+| `PINECONE_NAMESPACE` | Optional namespace |
+| `EMBEDDING_MODEL` | Ollama embedding model (`nomic-embed-text`) |
+| `GENERATION_MODEL` | Ollama generation model (Ollama fallback) |
+| `ANTHROPIC_API_KEY` | Optional — Anthropic key |
+| `ANTHROPIC_MODEL` | Optional — Claude model id |
+| `ANTHROPIC_CREDIT_BALANCE` | `true` to use Anthropic, `false` to force Ollama |
+
+`RETRIEVAL_TOP_K` (env, default `3`) controls how many matches feed the prompt.
+
+### Run
+
+```bash
+# from retrieval/
+go run .   # serves on http://localhost:8081
+```
+
+Startup log shows the chosen backend:
+```text
+Generation backend : Anthropic (claude-haiku-4-5-20251001)
+OmniRAG Retrieval Service →  http://localhost:8081
+Pinecone host    : https://...svc.pinecone.io (top_k=3)
+```

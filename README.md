@@ -10,7 +10,9 @@ Unlike standard out-of-the-box RAG setups that fall apart on real-world data, Om
 
 OmniRAG isolates the database layer from the AI retrieval logic. It treats your primary database (MongoDB in the current implementations) as the source of truth, while using document-aware routing and conditional fallback mechanisms inside the vector layer (ChromaDB or Qdrant) to improve deterministic accuracy.
 
-The current vector-backed implementations live in `chromadb-rag/` and `Qdrant-rag/`. Both seed MongoDB with source policy content, ingest that content into a vector store with Ollama-generated embeddings, and serve a retrieval UI/API before sending the final context to Claude 3.5 Sonnet or local Ollama Gemma 4 e2b. The Chroma service applies keyword-sensitive `where_document` filtering; the Qdrant service applies payload text filtering against the `content` field and falls back to semantic vector search.
+The current vector-backed implementations live in `chromadb-rag/`, `Qdrant-rag/`, and `pinecone-rag/`. The Chroma and Qdrant services seed MongoDB with source policy content, ingest that content into a vector store with Ollama-generated embeddings, and serve a retrieval UI/API before sending the final context to Claude or local Ollama Gemma 4. The Chroma service applies keyword-sensitive `where_document` filtering; the Qdrant service applies payload text filtering against the `content` field and falls back to semantic vector search.
+
+`pinecone-rag/` extends the pattern to full PDF/book content: it stores raw PDFs in MongoDB GridFS, chunks and embeds them page-by-page, upserts vectors into Pinecone, and serves a streaming (SSE) retrieval API. Its generation backend selects Anthropic Claude or local Ollama based on config, with a credit-balance guard for clean fallback. See [`pinecone-rag/README.md`](./pinecone-rag/README.md).
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -188,12 +190,13 @@ The current vector-backed implementations live in `chromadb-rag/` and `Qdrant-ra
 ## 🛠️ Tech Stack
 
 * **Language:** Go (Golang)
-* **Primary Store:** MongoDB (Source of Truth)
-* **Vector Databases:** ChromaDB and Qdrant
+* **Primary Store:** MongoDB (Source of Truth; GridFS for raw PDFs in the Pinecone pipeline)
+* **Vector Databases:** ChromaDB, Qdrant, and Pinecone
 * **Embeddings Model:** `nomic-embed-text` (via Ollama)
-* **Generation Models:** Claude 3.5 Sonnet / Gemma 4 e2b
+* **Generation Models:** Claude (Anthropic) / Gemma 4 (Ollama)
 * **Current ChromaDB Implementation:** `chromadb-rag/`
 * **Current Qdrant Implementation:** `Qdrant-rag/`
+* **Pinecone PDF/Book Implementation:** `pinecone-rag/` (full PDF ingestion + streaming retrieval)
 * **Legacy Prototype:** `mongo-rag-beginner/`
 
 ---
@@ -432,6 +435,13 @@ Omni-RAG/
 │           ├── app.js
 │           ├── index.html
 │           └── style.css
+├── pinecone-rag/
+│   ├── README.md
+│   ├── config.example.json
+│   ├── docs/
+│   │   └── RETRIEVAL_SSE_FORMAT.md
+│   ├── ingestion/          # PDF upload → GridFS → chunk → embed → Pinecone
+│   └── retrieval/          # query → embed → Pinecone → streamed LLM answer
 └── mongo-rag-beginner/
     ├── README.md
     ├── go.mod
@@ -446,7 +456,7 @@ Omni-RAG/
             └── style.css
 ```
 
-`chromadb-rag/` is the ChromaDB-backed OmniRAG implementation. `Qdrant-rag/` is the Qdrant-backed implementation with payload text filtering and semantic fallback. `mongo-rag-beginner/` is an earlier MongoDB-only prototype that stores embeddings directly in MongoDB and performs an in-process dot-product scan.
+`chromadb-rag/` is the ChromaDB-backed OmniRAG implementation. `Qdrant-rag/` is the Qdrant-backed implementation with payload text filtering and semantic fallback. `pinecone-rag/` is the Pinecone-backed PDF/book pipeline with GridFS storage and a streaming (SSE) retrieval API. `mongo-rag-beginner/` is an earlier MongoDB-only prototype that stores embeddings directly in MongoDB and performs an in-process dot-product scan.
 
 ---
 
