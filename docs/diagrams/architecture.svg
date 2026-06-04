@@ -24,7 +24,7 @@
 
   <!-- ================= EDGES ================= -->
   <!-- ingestion row -->
-  <path class="edge" d="M270,130 L352,130" marker-end="url(#arrow)"/>
+  <path class="edge" d="M270,130 L356,130" marker-end="url(#arrow)"/>
   <path class="edge" d="M560,130 L682,130" marker-end="url(#arrow)"/>
   <path class="edge" d="M450,172 C402,300 330,372 256,468" marker-end="url(#arrow)"/>
   <!-- retrieval column -->
@@ -36,7 +36,8 @@
   <path class="edge" d="M688,352 C520,372 432,430 366,500" marker-end="url(#arrow)"/>
 
   <!-- edge labels -->
-  <text class="lbl" x="311" y="118" text-anchor="middle">read content</text>
+  <text class="lbl" x="313" y="156" text-anchor="middle">read</text>
+  <text class="lbl" x="313" y="176" text-anchor="middle">content</text>
   <text class="lbl" x="621" y="118" text-anchor="middle">upsert vectors</text>
   <text class="lbl" x="372" y="318" text-anchor="middle">embed</text>
   <text class="lbl" x="788" y="246" text-anchor="end">top-k context</text>
