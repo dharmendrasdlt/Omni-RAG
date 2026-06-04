@@ -1,0 +1,4 @@
+config.json
+pinecone-config.json
+pinecone-rag/retrieval/retrieval
+pinecone-rag/ingestion/ingestion

@@ -1,0 +1,11 @@
+{
+  "PINECONE_API_KEY": "pcsk-your-key-here",
+  "PINECONE_INDEX_NAME": "your-index-name",
+  "PINECONE_HOST": "https://your-index-host.svc.pinecone.io",
+  "PINECONE_NAMESPACE": "",
+  "EMBEDDING_MODEL": "nomic-embed-text",
+  "GENERATION_MODEL": "gemma4:e4b",
+  "ANTHROPIC_API_KEY": "sk-ant-api03-your-key-here",
+  "ANTHROPIC_MODEL": "claude-haiku-4-5-20251001",
+  "ANTHROPIC_CREDIT_BALANCE": false
+}
