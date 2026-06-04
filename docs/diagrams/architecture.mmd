@@ -12,7 +12,7 @@ graph LR
     end
 
     OLL["Ollama<br/>nomic-embed-text"]:::llm
-    VS{{"Vector Store<br/>ChromaDB · Qdrant · Pinecone"}}:::vec
+    VS{{"Vector Store<br/>ChromaDB · Qdrant · Pinecone · MongoDB"}}:::vec
 
     INGEST -->|embed| OLL
     INGEST -->|upsert vectors| VS
