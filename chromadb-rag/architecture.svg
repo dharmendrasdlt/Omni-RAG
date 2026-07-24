@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="720" viewBox="0 0 1180 720" font-family="Inter, 'Segoe UI', sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#2563eb"/>
+    </marker>
+    <style>
+      .store{ fill:#fef9c3; stroke:#ca8a04; stroke-width:2px; }
+      .svc  { fill:#dbeafe; stroke:#2563eb; stroke-width:2px; }
+      .vec  { fill:#ede9fe; stroke:#7c3aed; stroke-width:2px; }
+      .llm  { fill:#dcfce7; stroke:#16a34a; stroke-width:2px; }
+      .ui   { fill:#ffffff; stroke:#94a3b8; stroke-width:1.6px; }
+      .title{ font-size:23px; font-weight:700; fill:#0f172a; }
+      .sub  { font-size:18px; fill:#475569; }
+      .edge { stroke:#2563eb; stroke-width:2.5px; fill:none; }
+      .lbl  { font-size:17px; fill:#334155; paint-order:stroke; stroke:#ffffff; stroke-width:6px; stroke-linejoin:round; }
+      .phase{ font-size:20px; font-weight:700; fill:#94a3b8; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="1180" height="720" fill="#ffffff"/>
+
+  <text class="phase" x="60" y="40">① Ingestion</text>
+  <text class="phase" x="1045" y="490" text-anchor="middle" transform="rotate(-90 1045 490)">② Retrieval &amp; Generation</text>
+
+  <!-- edges -->
+  <path class="edge" d="M270,130 L356,130" marker-end="url(#arrow)"/>
+  <path class="edge" d="M560,130 L682,130" marker-end="url(#arrow)"/>
+  <path class="edge" d="M450,172 C402,300 330,372 256,468" marker-end="url(#arrow)"/>
+  <path class="edge" d="M800,188 L800,298" marker-end="url(#arrow)"/>
+  <path class="edge" d="M862,298 L862,190" marker-end="url(#arrow)"/>
+  <path class="edge" d="M830,397 L830,448" marker-end="url(#arrow)"/>
+  <path class="edge" d="M830,537 L830,583" marker-end="url(#arrow)"/>
+  <path class="edge" d="M688,612 L648,612 L648,360 L682,360" marker-end="url(#arrow)"/>
+  <path class="edge" d="M688,352 C520,372 432,430 366,500" marker-end="url(#arrow)"/>
+
+  <text class="lbl" x="313" y="156" text-anchor="middle">read</text>
+  <text class="lbl" x="313" y="176" text-anchor="middle">content</text>
+  <text class="lbl" x="621" y="118" text-anchor="middle">embed + load</text>
+  <text class="lbl" x="372" y="318" text-anchor="middle">embed</text>
+  <text class="lbl" x="788" y="246" text-anchor="end">top-k context</text>
+  <text class="lbl" x="876" y="238" text-anchor="start">where_document</text>
+  <text class="lbl" x="876" y="262" text-anchor="start">+ semantic fallback</text>
+  <text class="lbl" x="846" y="426" text-anchor="start">grounded prompt</text>
+  <text class="lbl" x="846" y="566" text-anchor="start">answer</text>
+  <text class="lbl" x="640" y="488" text-anchor="end">query</text>
+  <text class="lbl" x="512" y="404" text-anchor="middle">embed query</text>
+
+  <!-- nodes -->
+  <rect class="store" x="60" y="80" width="210" height="100" rx="12"/>
+  <text class="title" x="165" y="123" text-anchor="middle">MongoDB</text>
+  <text class="sub"   x="165" y="150" text-anchor="middle">content_db · articles_v2</text>
+
+  <rect class="svc" x="360" y="92" width="200" height="80" rx="12"/>
+  <text class="title" x="460" y="138" text-anchor="middle">Ingest service</text>
+
+  <rect class="vec" x="690" y="70" width="280" height="112" rx="12"/>
+  <text class="title" x="830" y="112" text-anchor="middle">ChromaDB</text>
+  <text class="sub"   x="830" y="140" text-anchor="middle">policies_v2 · cosine · :8000</text>
+
+  <rect class="svc" x="690" y="300" width="280" height="98" rx="12"/>
+  <text class="title" x="830" y="340" text-anchor="middle">Retrieve service</text>
+  <text class="sub"   x="830" y="366" text-anchor="middle">:8080</text>
+
+  <rect class="llm" x="715" y="450" width="230" height="86" rx="12"/>
+  <text class="title" x="830" y="490" text-anchor="middle">Claude · Ollama</text>
+  <text class="sub"   x="830" y="514" text-anchor="middle">gemma4:e2b</text>
+
+  <rect class="ui" x="690" y="585" width="280" height="82" rx="12"/>
+  <text class="title" x="830" y="624" text-anchor="middle">Search UI</text>
+  <text class="sub"   x="830" y="648" text-anchor="middle">prose · table · json</text>
+
+  <rect class="llm" x="120" y="470" width="245" height="95" rx="12"/>
+  <text class="title" x="242" y="510" text-anchor="middle">Ollama</text>
+  <text class="sub"   x="242" y="536" text-anchor="middle">nomic-embed-text</text>
+</svg>
