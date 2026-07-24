@@ -188,6 +188,7 @@
       <a href="#overview">Overview</a>
       <a href="#implementations">Implementations</a>
       <a href="#architecture">Architecture</a>
+      <a href="#diagrams">Diagrams</a>
       <a href="#stack">Stack</a>
       <a class="nav-cta" href="https://github.com/dharmendrra/Omni-RAG" target="_blank" rel="noopener">View on GitHub</a>
     </nav>
@@ -367,8 +368,44 @@
   </div>
 </section>
 
+<!-- ===================== DIAGRAMS GALLERY ===================== -->
+<section id="diagrams" class="section-alt">
+  <div class="wrap">
+    <div class="eyebrow">Per-implementation</div>
+    <h2>Each backend's data-flow</h2>
+    <p class="lead">The same orchestration pattern, realized against four different vector stores. Each diagram traces that backend's real pipeline — collections, filters, embeddings, and ports.</p>
+
+    <div class="grid grid-2">
+      <figure class="figure" style="margin-top:0;">
+        <div class="figure-frame">
+          <img src="diagrams/chromadb.png" alt="ChromaDB RAG data-flow diagram" />
+          <figcaption><strong>ChromaDB</strong> — <code>where_document</code> keyword filter + semantic fallback</figcaption>
+        </div>
+      </figure>
+      <figure class="figure" style="margin-top:0;">
+        <div class="figure-frame">
+          <img src="diagrams/qdrant.png" alt="Qdrant RAG data-flow diagram" />
+          <figcaption><strong>Qdrant</strong> — payload text filter + semantic fallback (<code>points/search</code>)</figcaption>
+        </div>
+      </figure>
+      <figure class="figure" style="margin-top:0;">
+        <div class="figure-frame">
+          <img src="diagrams/pinecone.png" alt="Pinecone RAG data-flow diagram" />
+          <figcaption><strong>Pinecone</strong> — PDFs → GridFS → chunk/embed → upsert; retrieval streamed over SSE</figcaption>
+        </div>
+      </figure>
+      <figure class="figure" style="margin-top:0;">
+        <div class="figure-frame">
+          <img src="diagrams/mongodb.png" alt="MongoDB RAG data-flow diagram" />
+          <figcaption><strong>MongoDB</strong> — the database itself as the vector + knowledge store</figcaption>
+        </div>
+      </figure>
+    </div>
+  </div>
+</section>
+
 <!-- ===================== STACK ===================== -->
-<section id="stack" class="section-alt">
+<section id="stack">
   <div class="wrap">
     <div class="eyebrow">Engineering surface area</div>
     <h2>Technology stack</h2>
