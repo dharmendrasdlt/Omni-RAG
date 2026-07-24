@@ -184,6 +184,11 @@
   .lightbox__img { max-width: 95vw; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 24px 70px rgba(0,0,0,0.55); transform-origin: center center; touch-action: none; cursor: grab; will-change: transform; user-select: none; -webkit-user-drag: none; }
   .lightbox__close { position: fixed; top: 18px; right: 22px; width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(255,255,255,0.14); color: #fff; font-size: 28px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s ease, transform 0.15s ease; }
   .lightbox__close:hover { background: rgba(255,255,255,0.28); transform: scale(1.05); }
+  .lightbox__nav { position: fixed; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; border-radius: 50%; border: none; background: rgba(255,255,255,0.14); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s ease; z-index: 1; }
+  .lightbox__nav:hover { background: rgba(255,255,255,0.28); }
+  .lightbox__nav--prev { left: 22px; }
+  .lightbox__nav--next { right: 22px; }
+  @media (max-width: 600px) { .lightbox__nav { width: 40px; height: 40px; } .lightbox__nav--prev { left: 10px; } .lightbox__nav--next { right: 10px; } }
   .lightbox__hint { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.6); font-size: 0.78rem; letter-spacing: 0.02em; pointer-events: none; text-align: center; padding: 0 16px; }
 </style>
 </head>

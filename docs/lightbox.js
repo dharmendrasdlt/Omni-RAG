@@ -1,28 +1,40 @@
-/* Lightweight image lightbox with pinch / scroll zoom, pan, and Esc/close.
-   Applies to every content image that is NOT inside a link (so navigational
-   thumbnails keep navigating). No dependencies. */
+/* Lightweight image lightbox with gallery navigation, pinch / scroll zoom,
+   pan, and Esc/close. Applies to every content image that is NOT inside a
+   link (so navigational thumbnails keep navigating). No dependencies. */
 (function () {
   function ready(fn) {
     if (document.readyState !== 'loading') fn();
     else document.addEventListener('DOMContentLoaded', fn);
   }
 
-  var overlay, imgEl, closeBtn;
+  var overlay, imgEl, closeBtn, prevBtn, nextBtn;
   var scale = 1, tx = 0, ty = 0;
   var MIN = 1, MAX = 6;
   var pointers = new Map();
   var startDist = 0, startScale = 1, startMid = { x: 0, y: 0 }, startTx = 0, startTy = 0;
   var panStart = null;
+  var targets = [], current = -1;
 
   function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
   function mid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
   function clamp(s) { return Math.max(MIN, Math.min(MAX, s)); }
   function apply() { imgEl.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')'; }
   function resetView() { scale = 1; tx = 0; ty = 0; apply(); }
+  function isOpen() { return overlay.classList.contains('is-open'); }
 
-  function open(src, alt) {
-    imgEl.src = src; imgEl.alt = alt || '';
+  function show(i) {
+    if (!targets.length) return;
+    current = (i + targets.length) % targets.length;
+    var im = targets[current];
+    imgEl.src = im.currentSrc || im.src;
+    imgEl.alt = im.alt || '';
     resetView();
+  }
+  function next() { show(current + 1); }
+  function prev() { show(current - 1); }
+
+  function open(i) {
+    show(i);
     overlay.classList.add('is-open');
     overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
@@ -40,11 +52,11 @@
     var cx = rect.left + rect.width / 2;
     var cy = rect.top + rect.height / 2;
     var dx = clientX - cx, dy = clientY - cy;
-    var next = clamp(scale * factor);
-    var ratio = next / scale;
+    var nextS = clamp(scale * factor);
+    var ratio = nextS / scale;
     tx -= dx * (ratio - 1);
     ty -= dy * (ratio - 1);
-    scale = next;
+    scale = nextS;
     if (scale === 1) { tx = 0; ty = 0; }
     apply();
   }
@@ -55,20 +67,31 @@
     overlay.setAttribute('aria-hidden', 'true');
     overlay.innerHTML =
       '<button class="lightbox__close" type="button" aria-label="Close (Esc)">&times;</button>' +
+      '<button class="lightbox__nav lightbox__nav--prev" type="button" aria-label="Previous (left arrow)">' +
+        '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>' +
+      '<button class="lightbox__nav lightbox__nav--next" type="button" aria-label="Next (right arrow)">' +
+        '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>' +
       '<img class="lightbox__img" alt="">' +
-      '<div class="lightbox__hint">Pinch or scroll to zoom · double-click to reset · Esc to close</div>';
+      '<div class="lightbox__hint">← → to browse · pinch or scroll to zoom · Esc to close</div>';
     document.body.appendChild(overlay);
     imgEl = overlay.querySelector('.lightbox__img');
     closeBtn = overlay.querySelector('.lightbox__close');
+    prevBtn = overlay.querySelector('.lightbox__nav--prev');
+    nextBtn = overlay.querySelector('.lightbox__nav--next');
 
     closeBtn.addEventListener('click', close);
+    prevBtn.addEventListener('click', function (e) { e.stopPropagation(); prev(); });
+    nextBtn.addEventListener('click', function (e) { e.stopPropagation(); next(); });
     overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && overlay.classList.contains('is-open')) close();
+      if (!isOpen()) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
     });
 
     overlay.addEventListener('wheel', function (e) {
-      if (!overlay.classList.contains('is-open')) return;
+      if (!isOpen()) return;
       e.preventDefault();
       zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.12 : 1 / 1.12);
     }, { passive: false });
@@ -118,8 +141,15 @@
       if (im.closest('a')) return;          // keep navigational thumbnails as links
       if (im.closest('.lightbox')) return;  // skip the overlay image itself
       im.classList.add('zoomable');
-      im.addEventListener('click', function () { open(im.currentSrc || im.src, im.alt); });
+      var index = targets.length;
+      targets.push(im);
+      im.addEventListener('click', function () { open(index); });
     });
+
+    if (targets.length < 2) {
+      prevBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+    }
   }
 
   ready(init);
