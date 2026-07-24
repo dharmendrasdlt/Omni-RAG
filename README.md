@@ -1,6 +1,6 @@
 # OmniRAG 🚀
 
-**OmniRAG** is a high-performance, enterprise-grade Retrieval-Augmented Generation (RAG) engine written in Go. 
+**OmniRAG** is a Retrieval-Augmented Generation (RAG) engine written in Go. 
 
 Unlike standard out-of-the-box RAG setups that fall apart on real-world data, OmniRAG is built to work *on top of existing data* without forcing database schema migrations, intrusive backend re-indexing, or requiring end-users to master complex prompt engineering. It handles localized short keyword searches and abstract semantic queries with equal precision by shifting retrieval intelligence entirely to the orchestration layer.
 
@@ -180,7 +180,7 @@ The current vector-backed implementations live in `chromadb-rag/`, `Qdrant-rag/`
 ```
 
 ### Key Engineering Features:
-* **Zero-Data Alteration:** Works directly on raw, unpadded enterprise text segments.
+* **Zero-Data Alteration:** Works directly on raw, unpadded text segments.
 * **Deterministic Keyword Protection:** Uses vector-store document/payload pre-filtering (`where_document` in ChromaDB, payload text filters in Qdrant) to reduce embedding drift on short-tail keywords.
 * **Dynamic Failure Fallback:** Automatically drops strict constraints and shifts to pure semantic vector math if zero string matches are found—ensuring high recall.
 * **Go Backend Performance:** Lightweight, direct HTTP services with a small orchestration surface.

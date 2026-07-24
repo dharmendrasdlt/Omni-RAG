@@ -1,4 +1,4 @@
-# 🚀 Enterprise Go RAG Stack: MongoDB Content, ChromaDB Vectors & Web UI
+# 🚀 Go RAG Stack: MongoDB Content, ChromaDB Vectors & Web UI
 
 A highly decoupled, professional microservices RAG (Retrieval-Augmented Generation) pipeline written in Go. This architecture separates primary content transactional storage from specialized vector search, utilizing **MongoDB** as the raw document database, **ChromaDB** as the high-dimensional vector search index, and **Ollama** or **Claude** for AI response generation.
 
