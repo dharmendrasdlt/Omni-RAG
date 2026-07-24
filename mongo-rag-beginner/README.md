@@ -5,6 +5,10 @@ It utilizes a MongoDB database as a vector/knowledge store, supports local embed
 
 ## Architecture
 
+<p align="center">
+  <img src="./architecture.png" alt="mongo-rag — MongoDB as the vector and knowledge store" width="840">
+</p>
+
 ```
 mongo-rag/
 ├── ingest/

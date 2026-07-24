@@ -9,6 +9,10 @@ This module is the Pinecone-backed RAG pipeline for OmniRAG, split into two serv
 
 The **retrieval** service can generate answers with **Anthropic Claude** or fall back to local **Ollama** — see [Retrieval Service](#retrieval-service) below.
 
+<p align="center">
+  <img src="./architecture.png" alt="Pinecone RAG — ingestion and retrieval pipelines sharing Pinecone" width="860">
+</p>
+
 ---
 
 ## Ingestion Service

@@ -6,41 +6,9 @@ A highly decoupled, professional microservices RAG (Retrieval-Augmented Generati
 
 ## 📊 Visual Data Flow Diagram (DFD)
 
-```mermaid
-graph TD
-    classDef mongo fill:#4DB33D,stroke:#333,stroke-width:2px,color:#fff;
-    classDef qdrant fill:#DC244C,stroke:#333,stroke-width:2px,color:#fff;
-    classDef service fill:#007ACC,stroke:#333,stroke-width:2px,color:#fff;
-    classDef llm fill:#8A2BE2,stroke:#333,stroke-width:2px,color:#fff;
-    classDef ui fill:#2F4F4F,stroke:#333,stroke-width:2px,color:#fff;
-
-    subgraph Seeding Phase
-        A[seed/main.go]:::service -->|Insert Raw Text| B[(MongoDB: content_db.articles_v2)]:::mongo
-    end
-
-    subgraph Ingestion Phase
-        C[ingest/main.go]:::service -->|1. Read Source Text| B
-        C -->|2. Request Embedding| D(Ollama: nomic-embed-text):::llm
-        D -->|3. Return Embedding Vector| C
-        C -->|4. Create policies_v2 Collection| E[(Qdrant: policies_v2)]:::qdrant
-        C -->|5. Create content Text Index| E
-        C -->|6. Upsert Vector + Payload| E
-    end
-
-    subgraph Search & Retrieval Phase
-        F[Web Browser UI]:::ui -->|1. Submit Query + Format| G[retrieve/main.go HTTP Server]:::service
-        G -->|2. Embed Query via /api/embed| D
-        D -->|3. Return Query Vector| G
-        G -->|4. Qdrant points/search| E
-        E -->|5. Return Scored Payloads| G
-        G -->|6. Prompt Context + Query| H{Generator Selector}:::llm
-        H -->|If ANTHROPIC_API_KEY Set| I[Claude 3.5 Sonnet API]:::llm
-        H -->|Fallback Local| J[Ollama: gemma4:e2b]:::llm
-        I -->|Answer Text| G
-        J -->|Answer Text| G
-        G -->|7. JSON Response| F
-    end
-```
+<p align="center">
+  <img src="./architecture.png" alt="Qdrant RAG — end-to-end data-flow diagram" width="840">
+</p>
 
 ---
 

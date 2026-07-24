@@ -6,40 +6,9 @@ A highly decoupled, professional microservices RAG (Retrieval-Augmented Generati
 
 ## 📊 Visual Data Flow Diagram (DFD)
 
-```mermaid
-graph TD
-    %% Styling
-    classDef mongo fill:#4DB33D,stroke:#333,stroke-width:2px,color:#fff;
-    classDef chroma fill:#FF6F61,stroke:#333,stroke-width:2px,color:#fff;
-    classDef service fill:#007ACC,stroke:#333,stroke-width:2px,color:#fff;
-    classDef llm fill:#8A2BE2,stroke:#333,stroke-width:2px,color:#fff;
-    classDef ui fill:#2F4F4F,stroke:#333,stroke-width:2px,color:#fff;
-
-    subgraph Seeding Phase
-        A[seed/main.go]:::service -->|Insert Raw Texts| B[(MongoDB: content_db)]:::mongo
-    end
-
-    subgraph Ingestion Phase
-        C[ingest/main.go]:::service -->|1. Read Text| B
-        C -->|2. Request Embedding| D(Ollama: nomic-embed-text):::llm
-        D -->|3. Return Embeddings| C
-        C -->|4. Index Vectors & Text| E[(ChromaDB: policies)]:::chroma
-    end
-
-    subgraph Search & Retrieval Phase
-        F[Web Browser UI]:::ui -->|1. Submit Query & Format| G[retrieve/main.go HTTP Server]:::service
-        G -->|2. Request Query Embedding| D
-        D -->|3. Return Query Vector| G
-        G -->|4. Vector Query| E
-        E -->|5. Return Best Context Match| G
-        G -->|6. Send Prompt Context + Query| H{Generator Selector}:::llm
-        H -->|If ANTHROPIC_API_KEY Set| I[Claude 3.5 Sonnet API]:::llm
-        H -->|Fallback Offline| J[Ollama: gemma4:e2b]:::llm
-        I -->|Return Response Text| G
-        J -->|Return Response Text| G
-        G -->|7. Send JSON Response| F
-    end
-```
+<p align="center">
+  <img src="./architecture.png" alt="ChromaDB RAG — end-to-end data-flow diagram" width="840">
+</p>
 
 ---
 
