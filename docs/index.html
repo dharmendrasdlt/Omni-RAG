@@ -187,6 +187,7 @@
     <nav class="nav-links">
       <a href="#overview">Overview</a>
       <a href="#video">Video</a>
+      <a href="#in-action">In action</a>
       <a href="#implementations">Implementations</a>
       <a href="#architecture">Architecture</a>
       <a href="#diagrams">Diagrams</a>
@@ -260,6 +261,37 @@
             allowfullscreen></iframe>
         </div>
         <figcaption>Video overview — retrieval, grounding, and a swappable vector layer.</figcaption>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== IN ACTION ===================== -->
+<section id="in-action">
+  <div class="wrap">
+    <div class="eyebrow">Live UI</div>
+    <h2>OmniRAG in action</h2>
+    <p class="lead">The Pinecone pipeline end-to-end: ingest a PDF over a live Server-Sent Events stream — secured to GridFS, layout-extracted, embedded, and upserted to the vector space — then ask questions and get grounded, cited answers via Top-3 semantic retrieval and a streamed LLM.</p>
+
+    <div class="grid grid-2">
+      <figure class="figure" style="margin-top:0;">
+        <div class="figure-frame">
+          <img src="screenshots/ingest-running.png" alt="OmniRAG ingestion in progress — streaming embeddings into Pinecone" loading="lazy" />
+          <figcaption><strong>Ingestion · streaming</strong> — GridFS → extraction → embeddings, with live SSE progress</figcaption>
+        </div>
+      </figure>
+      <figure class="figure" style="margin-top:0;">
+        <div class="figure-frame">
+          <img src="screenshots/ingest-complete.png" alt="OmniRAG ingestion complete — 4,265 vectors indexed into Pinecone" loading="lazy" />
+          <figcaption><strong>Ingestion · complete</strong> — 4,265 vectors indexed into the Pinecone vector space</figcaption>
+        </div>
+      </figure>
+    </div>
+
+    <figure class="figure">
+      <div class="figure-frame">
+        <img src="screenshots/retrieval.png" alt="OmniRAG intelligent document search — semantic retrieval with a grounded, cited answer" loading="lazy" />
+        <figcaption><strong>Retrieval</strong> — Embed query → Query Pinecone → Generate answer, grounded with ranked source citations</figcaption>
       </div>
     </figure>
   </div>
